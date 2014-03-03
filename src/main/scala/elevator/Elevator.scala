@@ -84,6 +84,8 @@ class Elevator(car: Car) extends Actor {
         if(passengers.isEmpty) {
           currentState = ElevatorIdle(floor)
           simulation.building ! ElevatorBecameIdle(self, floor)
+          println("elevator ${car} becomes idle")
+          context.become(idle)
         } else {
           currentState = ElevatorTravelling(floor, direction, passengers, 0)
         }
