@@ -9,22 +9,28 @@ case class PickUp(passengers: Set[Person])
 sealed trait ElevatorState {
   def floor: Floor
 
-  // Estimate how long it would take you to travel to a given floor
-  def timeToFloor(simulation: SimulationParameters, desired: Floor): Int
+  // used to see if a state change is worth printing
+  def similarTo(state: ElevatorState): Boolean
 }
 
 /** this elevator currently has nothing to do
   * 
   */
 case class ElevatorIdle(floor: Floor) extends ElevatorState {
-  def timeToFloor(simulation: SimulationParameters, desired: Floor): Int = {
-    Math.abs(floor.value - desired.value) * simulation.numTicksBetweenFloors
+  def similarTo(state: ElevatorState): Boolean = state match {
+    case ElevatorIdle(_) ⇒ true
+    case _ ⇒ false
   }
+  
+  override def toString = s"Idle on floor $floor"
 }
 case class AwaitingInstruction(floor: Floor) extends ElevatorState {
-  def timeToFloor(simulation: SimulationParameters, desired: Floor): Int = {
-    Math.abs(floor.value - desired.value) * simulation.numTicksBetweenFloors
+  def similarTo(state: ElevatorState): Boolean = state match {
+    case AwaitingInstruction(_) ⇒ true
+    case _ ⇒ false
   }
+
+  override def toString = s"Waiting on floor $floor"
 }
 
 /**
@@ -32,40 +38,40 @@ case class AwaitingInstruction(floor: Floor) extends ElevatorState {
   */
 
 case class ElevatorExchange(floor: Floor, destinationFloor: Floor, direction: Direction, passengers: Set[Person], ticksInState: Int) extends ElevatorState {
-  def timeToFloor(simulation: SimulationParameters, desired: Floor): Int = {
-    // TODO we don't yet take in account dropping off our current passengers
-    (simulation.numTicksToExchangePassengers - ticksInState) + (
-      if(direction == floor.desiredDirection(desired))
-      (Math.abs(floor.value - desired.value) * simulation.numTicksBetweenFloors)
-    else // TODO we assume they have to hit the top floor
-      (((simulation.numFloors.value - floor.value) * simulation.numTicksBetweenFloors) +
-         (simulation.numFloors.value - desired.value) * simulation.numTicksBetweenFloors))
+  def similarTo(state: ElevatorState): Boolean = state match {
+    case ElevatorExchange(f,d,dir,_,_) if((f == floor) && (d == destinationFloor) && (dir==direction)) ⇒ true
+    case _ ⇒ false
   }
+
+  override def toString = s"exchanging passengers on $floor"
 }
 
 /**
   * This elevator is travelling to another floor
   */
 case class ElevatorTravelling(floor: Floor, destinationFloor: Floor, direction: Direction, passengers: Set[Person], ticksInState: Int) extends ElevatorState {
-  // TODO DRY, this is the same as ElevatorExchange
-  // TODO we don't yet take in account dropping off our current passengers
-  def timeToFloor(simulation: SimulationParameters, desired: Floor): Int = {
-    // TODO we don't yet take in account dropping off our current passengers
-    (simulation.numTicksToExchangePassengers - ticksInState) + (
-      if(direction == floor.desiredDirection(desired))
-      (Math.abs(floor.value - desired.value) * simulation.numTicksBetweenFloors)
-    else // TODO we assume they have to hit the top floor
-      (((simulation.numFloors.value - floor.value) * simulation.numTicksBetweenFloors) +
-         (simulation.numFloors.value - desired.value) * simulation.numTicksBetweenFloors))
+  def similarTo(state: ElevatorState): Boolean = state match {
+    case ElevatorTravelling(f,d,dir,_,_) if((f == floor) && (d == destinationFloor) && (dir==direction)) ⇒ true
+    case _ ⇒ false
   }
 
+  override def toString = s"just left floor $floor"
 }
 
 class Elevator(car: Car) extends Actor {
   val simulation = SimulationParameters(context.system)
 
   println("elevator: " + car.value + " on floor " + simulation.groundFloor)
-  var currentState: ElevatorState = ElevatorIdle(simulation.groundFloor)
+  var _currentState: ElevatorState = ElevatorIdle(simulation.groundFloor)
+
+  def currentState = _currentState
+
+  def currentState_=(s: ElevatorState) {
+    if(!currentState.similarTo(s)) {
+      println(s"elevator ${car} $s")
+    }
+    _currentState = s
+  }
 
   def receive: Receive = idle
 
@@ -109,12 +115,16 @@ class Elevator(car: Car) extends Actor {
           println(s"building told me to stop on my way to $destFloor to pick up $passengers")
           val newPassengers = passengers ++ oldPassengers
           currentState = ElevatorExchange(floor, destFloor, direction, newPassengers, 0)
-          println(s"elevator ${car.value} picked up ${passengers.size} passengers")
+          println(s"elevator ${car.value} picked up ${passengers}")
 
         case ElevatorExchange(floor, destFloor, direction, oldPassengers, ticksInState) ⇒
-          println(s"elevator ${car} picks up ${passengers.size} passengers on floor ${floor}")
-          currentState = ElevatorExchange(floor, newDest(direction, destFloor, passengers), direction, oldPassengers ++ passengers, 0)
-          println(s"elevator ${car.value} picked up ${passengers.size} passengers")
+          floor.desiredDirection(passengers.head.desiredFloor) match { // YOLO head
+            case Up ⇒
+              currentState = ElevatorExchange(floor, newDest(Up, Floor(0), passengers), Up, passengers, 0)
+            case Down ⇒
+              currentState = ElevatorExchange(floor, newDest(Down, simulation.numFloors, passengers), Down, passengers, 0)
+          }
+          println(s"elevator ${car.value} picked up ${passengers}")
 
         case ElevatorIdle(floor) ⇒
           floor.desiredDirection(passengers.head.desiredFloor) match { // YOLO head
@@ -123,7 +133,7 @@ class Elevator(car: Car) extends Actor {
             case Down ⇒
               currentState = ElevatorExchange(floor, newDest(Down, simulation.numFloors, passengers), Down, passengers, 0)
           }
-          println(s"elevator ${car.value} picked up ${passengers.size} passengers")
+          println(s"elevator ${car.value} picked up ${passengers}")
           
         case AwaitingInstruction(floor) ⇒
           floor.desiredDirection(passengers.head.desiredFloor) match { // YOLO head
@@ -132,7 +142,7 @@ class Elevator(car: Car) extends Actor {
             case Down ⇒
               currentState = ElevatorExchange(floor, newDest(Down, simulation.numFloors, passengers), Down, passengers, 0)
           }
-          println(s"elevator ${car.value} picked up ${passengers.size} passengers")
+          println(s"elevator ${car.value} picked up ${passengers}")
       }
   }
 
@@ -154,7 +164,6 @@ class Elevator(car: Car) extends Actor {
   }
 
   def dropPassengers(state: ElevatorTravelling): Unit = {
-    println(s"elevator ${car} arriving on floor ${state.floor}")
     val (getOff, stayOn) = state.passengers.partition(_.desiredFloor==state.floor)
 
     if(getOff.nonEmpty) {

@@ -14,9 +14,9 @@ class SimulationParameters(val system: ExtendedActorSystem) extends Extension {
   val numElevators: Car = Car(3)
   val groundFloor = Floor(1)
 
-  val percentageChanceOrArrival: Int = 3
+  val percentageChanceOrArrival: Int = 10
 
-  val simulationLength: FiniteDuration = 100 seconds
+  val simulationLength: FiniteDuration = 500 seconds
 
   lazy val building: ActorRef = system.actorOf(Props[Building])
 }
