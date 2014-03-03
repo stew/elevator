@@ -32,7 +32,7 @@ class Building extends Actor {
       else
         elevators = ref :: elevators
 
-    case ElevatorArrived(ref, floor, direction) ⇒ direction match {
+    case ElevatorStopping(ref, floor, direction) ⇒ direction match {
       case Up ⇒ if(waiters(floor.value)._1.nonEmpty) {
         ref ! PickUp(waiters(floor.value)._1)
         waiters(floor.value) = Set.empty[Person] → waiters(floor.value)._2
@@ -42,6 +42,14 @@ class Building extends Actor {
         waiters(floor.value) = waiters(floor.value)._1 → Set.empty[Person]
       }
     }
+    case ElevatorArrived(ref, floor) ⇒
+      if(waiters(floor.value)._1.nonEmpty) {
+        ref ! PickUp(waiters(floor.value)._1)
+        waiters(floor.value) = Set.empty[Person] → waiters(floor.value)._2
+      } else if(waiters(floor.value)._2.nonEmpty) {
+        ref ! PickUp(waiters(floor.value)._2)
+        waiters(floor.value) = waiters(floor.value)._1 → Set.empty[Person]
+      }
   }
 
   def doSomething(ref: ActorRef) {
@@ -66,7 +74,8 @@ class Building extends Actor {
 
 sealed trait BuildingMessages
 case class PersonWaiting(floor: Floor, p: Person)
-case class ElevatorArrived(elevator: ActorRef, floor: Floor, direction: Direction)
+case class ElevatorArrived(elevator: ActorRef, floor: Floor)
+case class ElevatorStopping(elevator: ActorRef, floor: Floor, direction: Direction)
 case class ElevatorBecameIdle(elevator: ActorRef, floor: Floor)
 
 case class BuildingState(elevators: IndexedSeq[ElevatorState], waiters: Map[Int, Set[Person]]) {
