@@ -1,0 +1,9 @@
+* Elevator Simulation
+** Overview
+We similate a building with a configurable number of floors and a
+configurable number of elevator cars.  Passengers arrive randomly in
+the lobby and request to be transported Up or Down.
+
+The simulation is tunable by Editing src/main/scala/elevator/Simulation.scala 
+
+To run, type "./sbt run"
