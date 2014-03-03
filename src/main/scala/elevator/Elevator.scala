@@ -77,8 +77,8 @@ class Elevator(car: Car) extends Actor {
       } else {
         println(s"elevator ${car.value} starts travelling to ${floor.value}")
         currentState = ElevatorTravelling(currentState.floor, floor, currentState.floor.desiredDirection(floor), Set.empty[Person],0)
-        context.become(notIdle)
       }
+      context.become(notIdle)
     case Tick ⇒ //Do Nothing
 
   }
