@@ -12,6 +12,9 @@ case class Floor(value: Int) extends AnyVal {
     case Up ⇒ Floor(value + 1)
     case Down ⇒ Floor(value - 1)
   }
+  override def toString = value.toString
 }
 
-case class Car(value: Int) extends AnyVal
+case class Car(value: Int) extends AnyVal {
+  override def toString = value.toString
+}

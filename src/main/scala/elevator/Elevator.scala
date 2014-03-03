@@ -84,7 +84,7 @@ class Elevator(car: Car) extends Actor {
         if(passengers.isEmpty) {
           currentState = ElevatorIdle(floor)
           simulation.building ! ElevatorBecameIdle(self, floor)
-          println("elevator ${car} becomes idle")
+          println(s"elevator ${car} becomes idle")
           context.become(idle)
         } else {
           currentState = ElevatorTravelling(floor, direction, passengers, 0)
@@ -109,8 +109,17 @@ class Elevator(car: Car) extends Actor {
             case None ⇒ // we switch directions
               currentState = ElevatorExchange(if(direction == Up) Down else Up, floor, newPassengers, 0)
           }
+        case ElevatorExchange(floor, direction, oldPassengers, ticksInState) ⇒
+          println(s"elevator ${car} picks up ${passengers.size} passengers on floor ${floor}")
+          currentState = ElevatorExchange(floor, direction, passengers ++ oldPassengers, 0)
           
-          println(s"elevator ${car.value} picked up ${passengers.size} passengers)")
+          println(s"elevator ${car.value} picked up ${passengers.size} passengers")
+        case ElevatorIdle(floor) ⇒
+          passengers.headOption match {
+            case Some(p) ⇒
+              currentState = ElevatorExchange(floor.desiredDirection(p.desiredFloor), floor, passengers, 0)
+            case None ⇒
+          }
       }
   }
 
