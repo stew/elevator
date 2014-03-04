@@ -4,6 +4,21 @@ We similate a building with a configurable number of floors and a
 configurable number of elevator cars.  Passengers arrive randomly in
 the lobby and request to be transported Up or Down.
 
-The simulation is tunable by Editing src/main/scala/elevator/Simulation.scala 
+The simulation is tunable by Editing
+src/main/scala/elevator/Simulation.scala
 
-To run, type "./sbt run"
+To run, type "./sbt run".  You will be given two choices,
+"elevator.ElevatorSimulation" and "elevator.JettyLauncher"
+** ElevatorSimulator
+This will just show you log messages of elevators arriving, picking up
+passengers, and passengers eventually leaving elevators
+** JettyLauncher
+This will start a web service on port 8080, if you then navigate to
+http://localhost:8080 you will get a useless webpage that connects via
+WebSockets (or long polling if WebSockets are not available) to the
+server.  Since as I said this web page is useless, the best you can do
+is to watch the javascript console and see that it is getting regular
+updates from the open session with the server about people waiting.
+Elevators never send updates yet, and we don't actually do anything
+with the JSON returned from the server yet.  This is still a work in
+progress.

@@ -14,11 +14,13 @@ class SimulationParameters(val system: ExtendedActorSystem) extends Extension {
   val numElevators: Car = Car(3)
   val groundFloor = Floor(1)
 
-  val percentageChanceOrArrival: Int = 10
+  val percentageChanceOrArrival: Int = 3
 
-  val simulationLength: FiniteDuration = 500 seconds
+  val simulationLength: FiniteDuration = 5 minutes
 
   lazy val building: ActorRef = system.actorOf(Props[Building])
+
+  var servlet: web.ElevatorServlet = _
 }
 
 object SimulationParameters extends ExtensionId[SimulationParameters] with ExtensionIdProvider {

@@ -1,6 +1,7 @@
 package elevator
 
 import akka.actor.{Actor,ActorRef}
+import web._
 
 class Building extends Actor {
   val simulation = SimulationParameters(context.system)
@@ -25,7 +26,9 @@ class Building extends Actor {
           waiters += (floor.value → (old._1, old._2 + person))
       }
       if(queue) queueAnElevator(floor)
-
+      val now = waiters(floor.value)
+      context.system.eventStream.publish(NewWaiting(floor.value,(now._1 ++ now._2).map(_.desiredFloor.value).to[List]))
+      
     case ElevatorBecameIdle(ref,_) ⇒
       if(elevatorsNeeded)
         doSomething(ref)
