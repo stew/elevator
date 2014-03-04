@@ -38,19 +38,23 @@ class Building extends Actor {
     case ElevatorStopping(ref, floor, direction) ⇒ direction match {
       case Up ⇒ if(waiters(floor.value)._1.nonEmpty) {
         ref ! PickUp(waiters(floor.value)._1)
+        context.system.eventStream.publish(NewWaiting(floor.value,waiters(floor.value)._2.map(_.desiredFloor.value).to[List]))
         waiters(floor.value) = Set.empty[Person] → waiters(floor.value)._2
       }
       case Down ⇒ if(waiters(floor.value)._2.nonEmpty) {
         ref ! PickUp(waiters(floor.value)._2)
+        context.system.eventStream.publish(NewWaiting(floor.value,waiters(floor.value)._1.map(_.desiredFloor.value).to[List]))
         waiters(floor.value) = waiters(floor.value)._1 → Set.empty[Person]
       }
     }
     case ElevatorArrived(ref, floor) ⇒
       if(waiters(floor.value)._1.nonEmpty) {
         ref ! PickUp(waiters(floor.value)._1)
+        context.system.eventStream.publish(NewWaiting(floor.value,waiters(floor.value)._2.map(_.desiredFloor.value).to[List]))
         waiters(floor.value) = Set.empty[Person] → waiters(floor.value)._2
       } else if(waiters(floor.value)._2.nonEmpty) {
         ref ! PickUp(waiters(floor.value)._2)
+        context.system.eventStream.publish(NewWaiting(floor.value,waiters(floor.value)._1.map(_.desiredFloor.value).to[List]))
         waiters(floor.value) = waiters(floor.value)._1 → Set.empty[Person]
       }
   }
